@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Asignación por defecto del direccionamiento de red
+desmic_por_defecto() {
+
+	direccionamiento="172.19.0.0/16"
+        direcgateway="$(echo $direccionamiento | cut -d'.' -f1,2,3).1/$(echo $direccionamiento | cut -d'/' -f2)"
+
+}
+
+# Asignación escogida del direccionamiento de red
+desmic_direccion_asignada() {
+
+	direccionamiento=$2
+        direcgateway="$(echo $direccionamiento | cut -d'.' -f1,2,3).1/$(echo $direccionamiento | cut -d'/' -f2)"
+        direcgatewayssh="$(echo $direccionamiento | cut -d'.' -f1,2,3).15/$(echo $direccionamiento | cut -d'/' -f2)"
+
+        if [[ $interfazdocker == $direcgateway ]] || [[ $interfazswarm == $direcgateway ]] || [[ $interfazssh == $direcgatewayssh ]]; then
+                direccionamiento="172.19.0.0/16"
+        fi
+
+}

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de administración</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+</head>
+<body>
+
+<div style="float: right;">
+    <p id="usuariosesion" style="display: inline;"></p>
+    <input type="submit" id="cerrarsesion" value="Cerrar sesion" class="btn btn-outline-secondary" style="padding: 5px 10px;">
+</div><br>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-6">
+            <h1 class="h5">Perfiles de usuario</h1>
+            Asignar perfiles a los usuarios<br>
+
+            <div class="row">
+                <div class="col-6">
+                    <select id="usuariosper" class="form-control">
+                        <option selected>Usuario</option>
+                    </select>
+                </div>
+
+                <div class="col-6">
+                    <select id="perfilesusu" class="form-control">
+                        <option selected>Perfiles</option>
+                    </select>
+                </div>
+            </div><br>
+
+            <input type="submit" id="botonper" value="Guardar" class="btn btn-primary" style="float: right;">
+        </div>
+
+        <div class="col-6">
+            <h1 class="h5">Acciones</h1>
+            Asignar perfiles a las acciones<br>
+
+            <div class="row">
+                <div class="col-8">
+                    <select id="acciones" class="form-control">
+                        <option selected>Acciones</option>
+                    </select>
+                </div>
+
+                <div class="col-2">
+                    <select id="perfilesacc" class="form-control" style="width: 240%;">
+                        <option selected>Perfiles</option>
+                    </select>
+                </div>
+            </div><br>
+
+            <input type="submit" id="botonacc" value="Guardar" class="btn btn-primary" style="float: right;">
+
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <h1 class="h5">Crear usuario</h1>
+
+    <label for="usuario" class="col-form-label col-form-label-lg">Nombre:</label>
+    <input type="text" id="usuario" class="form-control" style="width: 20%;"><br>
+    <label for="contrasena" class="col-form-label col-form-label-lg">Contraseña:</label>
+    <input type="password" id="contrasena" class="form-control" style="width: 20%;">
+    <input type="submit" id="botonusu" value="Crear" class="btn btn-primary" style="margin-right: 73%; width: 4.6%; float: right;">
+</div><br>
+
+<div class="container-fluid">
+    <h1 class="h5">Eliminar usuario</h1>
+
+    <select id="usuarioselim" class="form-control" style="display: inline; width: 20%;">
+        <option selected>Usuario</option>
+    </select>
+
+    <input type="submit" id="botonelimusu" value="Borrar" class="btn btn-primary" style="margin-right: 73%; float: right;">
+
+</div>
+
+<script type="text/javascript">
+
+    var usuariosesion = document.getElementById("usuariosesion");
+
+    var nombreusu = document.getElementById("usuario");
+    var contrasena = document.getElementById("contrasena");
+
+    var usuariosper = document.getElementById("usuariosper");
+    var usuarioselim = document.getElementById("usuarioselim");
+
+    var perfilesusu = document.getElementById("perfilesusu");
+    var perfilesacc = document.getElementById("perfilesacc");
+
+    var acciones = document.getElementById("acciones");
+
+    var cerrarsesion = document.getElementById("cerrarsesion");
+    var botonusu = document.getElementById("botonusu");
+    var botonper = document.getElementById("botonper");
+    var botonacc = document.getElementById("botonacc");
+    var botonelimusu = document.getElementById("botonelimusu");
+    cerrarsesion.addEventListener("click",cerrarses);
+    botonusu.addEventListener("click",crearusuario);
+    botonper.addEventListener("click",asignarper);
+    botonacc.addEventListener("click",asignaracc);
+    botonelimusu.addEventListener("click",eliminarusu);
+
+    var xhreq = new XMLHttpRequest();
+
+    var datosusu = {
+    }
+
+    datosusu["cont"] = "act";
+    xhreq.open("POST", "panelcontroller.php", true);
+//    xhreq.open("POST", "panelcontroller.py", true);
+    xhreq.onreadystatechange = act;
+    xhreq.send(JSON.stringify(datosusu));
+
+// Recibo de los usuarios, perfiles y acciones de la base de datos
+    function act() {
+        if ((xhreq.readyState == 4) && (xhreq.status == 200)) {
+            let result = JSON.parse(xhreq.responseText);
+
+            usuariosesion.innerHTML = result.usuariosesion;
+
+            // Recibo de la validación de las credenciales del usuario
+            if (result.mensaje == "Sesion cerrada") {
+                window.location.replace("http://rauldesmicpanel.asir/loginconsola.html");
+            }
+
+            for (i = 0; i < result.resultadousu.length; i++) {
+                var opcionesusu = document.createElement("option");
+                opcionesusu.innerHTML = result.resultadousu[i];
+                usuariosper.appendChild(opcionesusu);
+
+                var opcionusu = document.createElement("option");
+                opcionusu.innerHTML = result.resultadousu[i];
+                usuarioselim.appendChild(opcionusu);
+            }
+
+            for (i = 0; i < result.resultadoper.length; i++) {
+                var opcionesper = document.createElement("option");
+                opcionesper.innerHTML = result.resultadoper[i];
+                perfilesusu.appendChild(opcionesper);
+
+                var opcionper = document.createElement("option");
+                opcionper.innerHTML = result.resultadoper[i];
+                perfilesacc.appendChild(opcionper);
+            }
+
+            for (i = 0; i < result.resultadoacc.length; i++) {
+                var opcionesacc = document.createElement("option");
+                opcionesacc.innerHTML = result.resultadoacc[i];
+                acciones.appendChild(opcionesacc);
+            }
+        }
+    }
+
+// Cierre de la sesión del usuario
+    function cerrarses(event) {
+        datosusu["cont"] = "cerrarsesion";
+        xhreq.open("POST", "panelcontroller.php", true);
+//        xhreq.open("POST", "panelcontroller.py", true);
+        xhreq.send(JSON.stringify(datosusu));
+
+        window.location.replace("http://rauldesmicpanel.asir/loginconsola.html");
+    }
+
+// Validación de la creación de un usuario y envío de parámetros
+    function crearusuario(event) {
+        datosusu["nombreusuario"] = nombreusu.value;
+        datosusu["contrasenausuario"] = contrasena.value;
+        datosusu["cont"] = "crearusuario";
+
+        if ((nombreusu.value == "") || (contrasena.value == "")) {
+            alert("No has escrito el nombre de usuario o la contrasena correctamente");
+        }
+        else {
+            xhreq.open("POST", "panelcontroller.php", true);
+//            xhreq.open("POST", "panelcontroller.py", true);
+            xhreq.onreadystatechange = recibirusu;
+            xhreq.send(JSON.stringify(datosusu));
+        }
+    }
+
+// Validación de la eliminación de un usuario y envío de parámetros
+    function eliminarusu(event) {
+        datosusu["usuarioelim"] = usuarioselim.value;
+        datosusu["cont"] = "eliminarusu";
+
+        if (usuarioselim.value == "Usuario"){
+            alert("No has seleccionado el usuario correctamente");
+        }
+        else {
+            xhreq.open("POST", "panelcontroller.php", true);
+//            xhreq.open("POST", "panelcontroller.py", true);
+            xhreq.onreadystatechange = recibirusu;
+            xhreq.send(JSON.stringify(datosusu));
+        }
+    }
+
+// Recibo de los usuarios de la base de datos
+    function recibirusu() {
+        if ((xhreq.readyState == 4) && (xhreq.status == 200)) {
+            let result = JSON.parse(xhreq.responseText);
+
+            while (usuariosper.length > 1) {
+                usuariosper.removeChild(usuariosper.item(1));
+            }
+
+            while (usuarioselim.length > 1) {
+                usuarioselim.removeChild(usuarioselim.item(1));
+            }
+
+            for (i = 0; i < result.resultadousu.length; i++) {
+                var opciones = document.createElement("option");
+                opciones.innerHTML = result.resultadousu[i];
+                usuariosper.appendChild(opciones);
+
+                var opcion = document.createElement("option");
+                opcion.innerHTML = result.resultadousu[i];
+                usuarioselim.appendChild(opcion);
+            }
+
+            alert(result.mensaje);
+        }
+    }
+
+// Validación de la asignación de perfiles de usuario y envío de parámetros
+    function asignarper(event) {
+        datosusu["perfilnomusu"] = usuariosper.value;
+        datosusu["perfilusu"] = perfilesusu.value;
+        datosusu["cont"] = "asignarper";
+
+        if ((usuariosper.value == "Usuario") || (perfilesusu.value == "Perfiles")){
+           alert("No has seleccionado los usuarios o los perfiles correctamente");
+        }
+        else {
+            xhreq.open("POST", "panelcontroller.php", true);
+//            xhreq.open("POST", "panelcontroller.py", true);
+            xhreq.onreadystatechange = recibirmen;
+            xhreq.send(JSON.stringify(datosusu));
+        }
+    }
+
+// Validación de la asignación de acciones a los perfiles y envío de parámetros
+    function asignaracc(event) {
+        datosusu["accionnom"] = acciones.value;
+        datosusu["perfilesacc"] = perfilesacc.value;
+        datosusu["cont"] = "asignaracc";
+
+        if ((acciones.value == "Acciones") || (perfilesacc.value == "Perfiles")){
+            alert("No has seleccionado las acciones o los perfiles correctamente");
+        }
+        else {
+            xhreq.open("POST", "panelcontroller.php", true);
+//            xhreq.open("POST", "panelcontroller.py", true);
+            xhreq.onreadystatechange = recibirmen;
+            xhreq.send(JSON.stringify(datosusu));
+        }
+    }
+
+// Mensaje de la acción
+    function recibirmen() {
+        if ((xhreq.readyState == 4) && (xhreq.status == 200)) {
+            let result = JSON.parse(xhreq.responseText);
+            alert(result.mensaje);
+        }
+    }
+
+</script>
+</body>
+</html>
+

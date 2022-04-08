@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Direcciones ip de las interfaces de red que se hacen conflicto
+interfazdocker="$(ip addr show docker0 | egrep 'inet ' | awk -F' ' '{print $2}')"
+interfazswarm="$(ip addr show docker_gwbridge | egrep 'inet ' | awk -F' ' '{print $2}')"
+interfazkubernetes="$(ip addr show cni0 | egrep 'inet ' | awk -F' ' '{print $2}')"
+interfazkubernetes2="$(ip addr show flannel.1 | egrep 'inet ' | awk -F' ' '{print $2}')"
+interfazssh="$(ip addr show ens38 | egrep 'inet ' | awk -F' ' '{print $2}')"
+
+. desmicasigdir
+. desmicelimdir
+. desmicwordpress
+
+# Asignación del direccionamiento de red
+if [[ $2 == "Por_defecto" ]]; then
+	desmic_por_defecto
+else
+	desmic_direccion_asignada
+fi
+
+dirredsinmas="$(echo $direccionamiento | cut -d'/' -f1)"
+dirmas="$(echo $direccionamiento | cut -d'/' -f2)"
+
+# Eliminación de las redes de Docker que se hacen conflicto
+if [[ $3 == "Sin_HA" ]] && [[ $4 == "Sin_HA" ]]; then
+	desmicdir_sin_ha
+else
+
+	if [[ $3 == "Docker_Swarm" ]]; then
+		desmicdir_docker_swarm
+	fi
+
+
+	if [[ $3 == "Kubernetes" ]] && [[ $interfazkubernetes2 != "$dirredsinmas/32" ]]; then
+		desmicdir_kubernetes
+	fi
+fi
+
+
+# Despliegue de los microservicios
+if [[ $1 == "Wordpress" ]]; then
+
+	if [[ $HA == "Sin HA" ]]; then
+		wordpress_sin_ha
+	fi
+
+
+	if [[ $3 == "Docker_Swarm" ]]; then
+		wordpress_docker_swarm
+	fi
+
+
+	if [[ $3 == "Kubernetes" ]]; then
+		wordpress_kubernetes
+	fi
+fi

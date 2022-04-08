@@ -1,0 +1,36 @@
+#!/bin/bash
+
+
+# Despliegue del microservicio en Docker sin HA
+wordpress_sin_ha() {
+
+	dirwordpress="$(echo $direccionamiento | cut -d'.' -f1,2,3)".25
+        dirmysql="$(echo $direccionamiento | cut -d'.' -f1,2,3)".26
+
+        sed -i "s/ipv4_address: .*25$/ipv4_address: $dirwordpress/g" docker-composedocker.yaml
+        sed -i "s/ipv4_address: .*26$/ipv4_address: $dirmysql/g" docker-composedocker.yaml
+        sed -i "s/- subnet.*/- subnet: $dirredsinmas\/$dirmas/g" docker-composedocker.yaml
+        /root/docker-compose -f docker-composedocker.yaml up -d > /dev/null 2> /dev/null
+        docker exec wordpress sed -i "s/define( 'DB_HOST'.*/define( 'DB_HOST', '$dirmysql' );/g" /var/www/wordpress/wp-config.php
+
+}
+
+# Despliegue del microservicio abastecido en HA con Docker Swarm
+wordpress_docker_swarm() {
+
+	/root/docker-compose -f docker-composecluster.yaml up -d > /dev/null 2> /dev/null
+        sed -i "s/- subnet.*/- subnet: $dirredsinmas\/$dirmas/g" docker-compose-swarm.yaml
+        sed -i "s/replicas:.*/replicas: $4/g" docker-compose-swarm.yaml
+        docker stack deploy -c docker-compose-swarm.yaml wordpress > /dev/null 2> /dev/null
+
+}
+
+# Despliegue del microservicio abastecido en HA con Kubernetes
+wordpress_kubernetes() {
+
+	ssh -i rootllavecluster root@192.168.20.16 "/root/docker-compose -f docker-composecluster.yaml up -d" > /dev/null 2> /dev/null
+        sed -i "s/replicas:.*/replicas: $4/g" debianans-deployment.yaml
+        kubectl create -f debianans-deployment.yaml > /dev/null 2> /dev/null
+        kubectl create -f debianans-service.yaml > /dev/null 2> /dev/null
+
+}

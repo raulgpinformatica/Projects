@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Eliminación de las redes de Docker sin alta disponibilidad
+desmicdir_sin_ha() {
+
+	HA="Sin HA"
+        docker network rm root_desmic > /dev/null 2> /dev/null
+
+        if [[ $interfazkubernetes == $direcgateway ]]; then
+                ip link set down cni0
+        fi
+
+}
+
+# Eliminación de las redes de Docker para abastecer en HA mediante Docker Swarm
+desmicdir_docker_swarm() {
+
+	ssh -i rootllavecluster root@192.168.20.16 "docker network rm root_desmic" > /dev/null 2> /dev/null
+        docker network rm root_desmic > /dev/null 2> /dev/null
+
+}
+
+# Asignación del direccionamiento en la arquitectura de los pods de Kubernetes
+desmicdir_kubernetes() {
+
+	ssh -i rootllavecluster root@192.168.20.16 "docker network rm root_desmic" > /dev/null 2> /dev/null
+        ip link set up cni0
+        sed -i "s/\- --cluster-cidr=.*/- --cluster-cidr=$dirredsinmas\/$dirmas/g" /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+        # Archivo generado del comando, kubectl get no $hostname -o yaml >> file.yaml
+        sed -i "s/v:.*/v:\"$dirredsinmas\/$dirmas\": {}/g" file.yaml
+        sed -i "s/^\ \+podCIDR:.*/    podCIDR: $dirredsinmas\/$dirmas/g" file.yaml
+        sed -i "s/^\ \+\-.\+\/[0-9]*$/    - $dirredsinmas\/$dirmas/g" file.yaml
+        kubectl delete no serdesmic serdesmictrab > /dev/null 2> /dev/null
+        kubectl create -f file.yaml > /dev/null 2> /dev/null
+
+        sed -i "s/^\ \+\"Network\":.*/      \"Network\": \"$dirredsinmas\/$dirmas\",/g" kube-flannel.yml
+        kubectl apply -f kube-flannel.yml > /dev/null 2> /dev/null
+
+        ip link delete cni0; ip link delete flannel.1
+        ssh -i rootllavecluster root@192.168.20.16 "ip link delete cni0; ip link delete flannel.1"
+        kubectl delete pod --selector=app=flannel -n kube-system > /dev/null 2> /dev/null
+        kubectl delete pod --selector=k8s-app=kube-dns -n kube-system > /dev/null 2> /dev/null
+        ssh -i rootllavecluster root@192.168.20.16 "ip link delete cni0"
+
+}
